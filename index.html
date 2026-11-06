@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人主页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        :root {
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --color-primary: #2563eb;
+            --color-primary-hover: #1d4ed8;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --bg-page: #ffffff;
+            --bg-card: #f9fafb;
+            --border-color: #e5e7eb;
+            --anim-enable: 1;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-md: 0 3px 8px rgba(0,0,0,0.08);
+        }
+
+        body {
+            background-color: var(--bg-page);
+            min-height: 100vh;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+        body.no-scroll {
+            overflow: hidden;
+        }
+
+        /* 汉堡按钮 */
+        .hamburger-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius-sm);
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all calc(0.3s * var(--anim-enable)) ease;
+        }
+        .hamburger-btn:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .hamburger-btn span {
+            width: 20px;
+            height: 2px;
+            background-color: var(--color-primary);
+            border-radius: 2px;
+            transition: all calc(0.3s * var(--anim-enable)) ease;
+        }
+        .hamburger-btn.active span:nth-child(1) {
+            transform: translateY(6px) rotate(45deg);
+        }
+        .hamburger-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger-btn.active span:nth-child(3) {
+            transform: translateY(-6px) rotate(-45deg);
+        }
+
+        /* 侧边遮罩 */
+        .sidebar-mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.18);
+            z-index: 80;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity calc(0.3s * var(--anim-enable));
+        }
+        .sidebar-mask.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 侧边栏，可滚动 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 260px;
+            height: 100vh;
+            background-color: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            z-index: 90;
+            transform: translateX(-100%);
+            transition: transform calc(0.35s * var(--anim-enable)) ease;
+            padding: 72px 18px 18px;
+            overflow-y: auto;
+        }
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-item {
+            padding: 12px 14px;
+            margin: 5px 0;
+            border-radius: var(--radius-sm);
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all calc(0.25s * var(--anim-enable)) ease;
+            font-size: 14px;
+        }
+        .sidebar-item:hover {
+            background-color: #eff6ff;
+            border-color: #bfdbfe;
+        }
+
+        /* 主容器 github式排版 */
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+        /* 多语言简介 横版排列 */
+        .intro-multi {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            margin-bottom: 32px;
+            padding-bottom:24px;
+            border-bottom:1px solid var(--border-color);
+        }
+        .intro-multi span{
+            font-size:15px;
+            color:var(--text-sub);
+        }
+
+        .page-header h1{
+            font-size:28px;
+            font-weight:600;
+            margin-bottom:8px;
+        }
+        .page-header .desc{
+            color:var(--text-sub);
+            margin-bottom:20px;
+        }
+
+        /* 项目网格 github风格卡片 */
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap:16px;
+        }
+        .project-card {
+            background-color: #fff;
+            border:1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding:20px;
+            cursor:pointer;
+            transition: all calc(0.25s * var(--anim-enable)) ease;
+        }
+        .project-card:hover{
+            border-color: var(--color-primary);
+        }
+        .project-card h3{
+            font-size:17px;
+            margin-bottom:6px;
+            color:var(--text-main);
+        }
+        .project-card p{
+            font-size:13px;
+            color:var(--text-sub);
+        }
+
+        /* 弹窗 */
+        .modal-wrap {
+            position: fixed;
+            inset:0;
+            background:rgba(0,0,0,0.20);
+            z-index:200;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+            opacity:0;
+            pointer-events:none;
+            transition:opacity calc(0.3s * var(--anim-enable));
+        }
+        .modal-wrap.open{
+            opacity:1;
+            pointer-events:auto;
+        }
+        .modal-box{
+            width:100%;
+            max-width:540px;
+            max-height:82vh;
+            overflow-y:auto;
+            background-color:#fff;
+            border:1px solid var(--border-color);
+            border-radius:var(--radius-md);
+            padding:26px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.12);
+            transform:translateY(8px);
+            transition:transform calc(0.3s * var(--anim-enable)) ease;
+        }
+        .modal-wrap.open .modal-box{
+            transform:translateY(0);
+        }
+        .modal-box h2{
+            font-size:20px;
+            margin-bottom:14px;
+            color:var(--text-main);
+        }
+        .modal-body{
+            color:var(--text-sub);
+            font-size:14px;
+        }
+        .modal-body p{
+            margin-bottom:10px;
+        }
+        .modal-footer{
+            display:flex;
+            gap:10px;
+            justify-content:flex-end;
+            margin-top:22px;
+            flex-wrap:wrap;
+        }
+        .btn{
+            padding:9px 16px;
+            border-radius:var(--radius-sm);
+            border:none;
+            font-size:14px;
+            cursor:pointer;
+            transition:all calc(0.2s * var(--anim-enable)) ease;
+        }
+        .btn:active{
+            transform:scale(0.97);
+        }
+        .btn-close{
+            background-color:var(--bg-card);
+            border:1px solid var(--border-color);
+            color:var(--text-main);
+        }
+        .btn-close:hover{
+            background-color:#e5e7eb;
+        }
+        .btn-primary{
+            background-color:var(--color-primary);
+            color:#fff;
+        }
+        .btn-primary:hover{
+            background-color:var(--color-primary-hover);
+        }
+        .btn-primary:disabled{
+            background:#9ca3af;
+            cursor:not-allowed;
+            transform:none;
+        }
+
+        /* 设置控件 */
+        .setting-group{
+            margin-bottom:20px;
+        }
+        .setting-group h4{
+            font-size:15px;
+            margin-bottom:8px;
+            color:var(--text-main);
+        }
+        .setting-item{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:11px 13px;
+            background-color:var(--bg-card);
+            border-radius:var(--radius-sm);
+            margin-bottom:7px;
+            border:1px solid var(--border-color);
+        }
+        .toggle{
+            position:relative;
+            width:42px;
+            height:22px;
+        }
+        .toggle input{
+            opacity:0;
+            width:0;
+            height:0;
+        }
+        .toggle-slider{
+            position:absolute;
+            inset:0;
+            background:#d1d5db;
+            border-radius:22px;
+            transition:0.25s;
+        }
+        .toggle-slider::before{
+            position:absolute;
+            content:"";
+            width:16px;
+            height:16px;
+            left:3px;
+            bottom:3px;
+            background:#fff;
+            border-radius:50%;
+            transition:0.25s;
+        }
+        .toggle input:checked + .toggle-slider{
+            background:var(--color-primary);
+        }
+        .toggle input:checked + .toggle-slider::before{
+            transform:translateX(18px);
+        }
+        .toggle input:focus-visible + .toggle-slider{
+            outline:2px solid var(--color-primary);
+            outline-offset:2px;
+        }
+
+        /* Toast */
+        .toast{
+            position:fixed;
+            bottom:22px;
+            left:50%;
+            transform:translateX(-50%);
+            z-index:999;
+            background:#1f2937;
+            color:#fff;
+            padding:8px 16px;
+            border-radius:var(--radius-sm);
+            font-size:13px;
+            opacity:0;
+            pointer-events:none;
+            transition:opacity 0.3s;
+        }
+        .toast.show{
+            opacity:1;
+        }
+
+        footer{
+            margin-top:40px;
+            text-align:center;
+            font-size:12px;
+            color:var(--text-sub);
+        }
+
+        @media(max-width:640px){
+            .sidebar{width:230px;}
+            .container{padding:32px 16px;}
+            .intro-multi{gap:6px 12px;}
+            .modal-box{padding:20px;}
+        }
+    </style>
+</head>
+<body>
+    <div class="hamburger-btn" id="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    <div class="sidebar-mask" id="sidebarMask"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-item" data-key="rock">牛郎猜拳</div>
+        <div class="sidebar-item" data-key="calc">牛郎计算机</div>
+        <div class="sidebar-item" data-key="setting">设置</div>
+        <div class="sidebar-item" data-key="about">关于本站</div>
+        <div class="sidebar-item" data-key="boss">牛郎董事长</div>
+        <div class="sidebar-item" data-key="nltv">NLTV</div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>个人主页</h1>
+            <p class="desc">项目作品集页面</p>
+            <!-- 8种语言 "我好帅" 横版排列，不标注语言 -->
+            <div class="intro-multi">
+                <span>我好帅</span>
+                <span>I'm so handsome</span>
+                <span>Je suis tellement beau</span>
+                <span>Ich bin so hübsch</span>
+                <span>Soy muy guapo</span>
+                <span>Io sono così bello</span>
+                <span>私はとてもかっこいい</span>
+                <span>Я такой красивый</span>
+            </div>
+        </div>
+
+        <div class="project-grid">
+            <div class="project-card" data-key="rock">
+                <h3>牛郎猜拳</h3>
+                <p>石头剪刀布网页小游戏，AI对战。</p>
+            </div>
+            <div class="project-card" data-key="calc">
+                <h3>牛郎计算机</h3>
+                <p>网页简易计算器工具。</p>
+            </div>
+            <div class="project-card" data-key="boss">
+                <h3>牛郎董事长</h3>
+                <p>综合项目合集。</p>
+            </div>
+            <div class="project-card" data-key="nltv">
+                <h3>NLTV</h3>
+                <p>媒体实验项目。</p>
+            </div>
+        </div>
+
+        <footer>个人作品集 · 静态网页</footer>
+    </div>
+
+    <div class="modal-wrap" id="modalWrap">
+        <div class="modal-box">
+            <h2 id="modalTitle"></h2>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-close" id="closeModal">关闭</button>
+                <button class="btn btn-close" id="resetSettingBtn" style="display:none;">恢复默认</button>
+                <button class="btn btn-primary" id="jumpBtn">一键跳转</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const safeStorage = {
+            set(key,val){
+                try{localStorage.setItem(key,val);return true;}catch(e){return false;}
+            },
+            get(key){
+                try{return localStorage.getItem(key);}catch(e){return null;}
+            }
+        };
+        function showToast(msg){
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.classList.add("show");
+            setTimeout(()=>t.classList.remove("show"),1800);
+        }
+
+        const projectData = {
+            rock:{
+                title:"牛郎猜拳",
+                isJumpPage:true,
+                body:`<p>牛郎猜拳是浏览器端轻量石头剪刀布小游戏，与电脑AI进行对战。</p>
+                <p>系统会自动统计胜利、失败和平局，操作简单，打开即可游玩。</p>
+                <p>后续可以增加连胜统计、难度调节等扩展功能。</p>`,
+                url:"https://www.baidu.com"
+            },
+            calc:{
+                title:"牛郎计算机",
+                isJumpPage:true,
+                body:`<p>牛郎计算机为网页版计算器，支持加减乘除、小数运算。</p>
+                <p>具备输入校验，避免非法表达式报错，电脑手机都可以正常使用。</p>
+                <p>后续计划加入计算历史、括号运算等能力。</p>`,
+                url:"https://www.baidu.com"
+            },
+            setting:{
+                title:"网站设置",
+                isJumpPage:false,
+                isSetting:true,
+                body:`
+                <div class="setting-group">
+                    <h4>动画设置</h4>
+                    <div class="setting-item">
+                        <label>开启页面动画</label>
+                        <label class="toggle">
+                            <input type="checkbox" id="animToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                `,
+                url:""
+            },
+            about:{
+                title:"关于本站",
+                isJumpPage:false,
+                body:`<p>静态个人作品集网页，原生HTML/CSS/Javascript实现，无第三方框架依赖。</p>
+                <p>左上角汉堡按钮唤起侧边导航，项目使用弹窗展示详情。设置与关于本站无跳转按钮。</p>
+                <p>配置存储在浏览器本地，不会上传任何个人信息。</p>`,
+                url:""
+            },
+            boss:{
+                title:"牛郎董事长",
+                isJumpPage:true,
+                body:`<p>牛郎董事长，综合项目合集页面，存放各类Demo、小工具、实验页面。</p>
+                <p>汇总休闲小游戏、UI原型、网页工具，方便集中访问。</p>`,
+                url:"https://www.baidu.com"
+            },
+            nltv:{
+                title:"NLTV",
+                isJumpPage:true,
+                body:`<p>NLTV媒体实验项目，用于测试网页播放器、媒体相关UI与播放逻辑。</p>
+                <p>尚在迭代实验阶段，后续增加播放列表、倍速等功能。</p>`,
+                url:"https://www.baidu.com"
+            }
+        };
+
+        const DEFAULT_CONFIG = { anim:true };
+        let siteConfig = JSON.parse(safeStorage.get("siteConfig")) || {...DEFAULT_CONFIG};
+
+        function applyConfig(){
+            document.documentElement.style.setProperty('--anim-enable', siteConfig.anim ? 1 : 0);
+        }
+        function saveConfig(){
+            safeStorage.set("siteConfig", JSON.stringify(siteConfig));
+        }
+        function resetConfig(){
+            siteConfig = {...DEFAULT_CONFIG};
+            applyConfig(); saveConfig();
+            showToast("已恢复默认设置");
+        }
+        applyConfig();
+
+        const hamburger = document.getElementById("hamburger");
+        const sidebar = document.getElementById("sidebar");
+        const sidebarMask = document.getElementById("sidebarMask");
+        function toggleSidebar(){
+            hamburger.classList.toggle("active");
+            sidebar.classList.toggle("open");
+            sidebarMask.classList.toggle("show");
+            document.body.classList.toggle("no-scroll", sidebar.classList.contains("open"));
+        }
+        hamburger.onclick = toggleSidebar;
+        sidebarMask.onclick = toggleSidebar;
+
+        const modalWrap = document.getElementById("modalWrap");
+        const modalTitle = document.getElementById("modalTitle");
+        const modalBody = document.getElementById("modalBody");
+        const jumpBtn = document.getElementById("jumpBtn");
+        const closeModal = document.getElementById("closeModal");
+        const resetSettingBtn = document.getElementById("resetSettingBtn");
+        let currentLink = "";
+
+        function openModal(key){
+            const d = projectData[key];
+            if(!d) return;
+            modalTitle.innerText = d.title;
+            modalBody.innerHTML = d.body;
+            currentLink = d.url||"";
+            modalWrap.classList.add("open");
+
+            resetSettingBtn.style.display = d.isSetting ? "block":"none";
+            jumpBtn.style.display = d.isJumpPage ? "block":"none";
+            if(d.isJumpPage){
+                jumpBtn.disabled = !currentLink;
+            }
+
+            if(d.isSetting){
+                const animToggle = document.getElementById("animToggle");
+                animToggle.checked = siteConfig.anim;
+            }
+        }
+        function closeModalFunc(){
+            modalWrap.classList.remove("open");
+        }
+        closeModal.onclick = closeModalFunc;
+        modalWrap.onclick = e=>{if(e.target===modalWrap) closeModalFunc();};
+        jumpBtn.onclick = ()=>{if(currentLink) window.open(currentLink,"_blank");};
+        resetSettingBtn.onclick = resetConfig;
+
+        modalBody.addEventListener("input",ev=>{
+            const t = ev.target;
+            if(t.id === "animToggle"){
+                siteConfig.anim = t.checked;
+                applyConfig(); saveConfig();
+                showToast("设置已保存");
+            }
+        });
+
+        document.addEventListener("keydown",e=>{
+            if(e.key === "Escape") closeModalFunc();
+        });
+
+        document.querySelectorAll(".sidebar-item").forEach(el=>{
+            el.onclick = ()=>{
+                openModal(el.dataset.key);
+                toggleSidebar();
+            };
+        });
+        document.querySelectorAll(".project-card").forEach(el=>{
+            el.onclick = ()=> openModal(el.dataset.key);
+        });
+    </script>
+</body>
+</html>
